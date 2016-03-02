@@ -1,5 +1,7 @@
 using ApApproximation
 using Base.Test
 
+using Images, TestImages
+
 # write your own tests here
-@test 1 == 1
+include("rotation_translation.jl")
