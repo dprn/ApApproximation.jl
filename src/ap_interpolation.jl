@@ -37,7 +37,7 @@ Actual AP approximation of a function defined on the bispectral set
 ap(f, J = nothing) = ap(f, f.E, J)
 function ap{R<:Real, T<:Real, N}(f::BispInterpolation{N, R}, F::BispectralSet{N,T}, J::Union{Void, BesselMatrix} = nothing)
     # Check if we are given the precomputed Bessel matrices
-    J == nothing && (matrix = discrete_bessel_matrix(E,F))
+    J == nothing && (matrix = discrete_bessel_matrix(f.E,F))
 
     hat_f = radial_fft(f)
 
@@ -70,7 +70,7 @@ Inverse AP approximation
 iap(af, J = nothing) = iap(af, af.E, J)
 function iap{R<:Number, T<:Real, N}(af::BispInterpolation{N, R}, E::BispectralSet{N,T}, J::Union{Void, BesselMatrix} = nothing)
     # Check if we are given the precomputed Bessel matrices
-    matrix = (J == nothing) ? discrete_bessel_matrix(E,F) : J.matrix
+    matrix = (J == nothing) ? discrete_bessel_matrix(E,af.E) : J.matrix
 
     hat_af = radial_fft(af)
 

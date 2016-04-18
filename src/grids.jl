@@ -82,6 +82,8 @@ Base.getindex(f::BispInterpolation, ::Colon) = [f.f[i] for i in 1:length(f)]
 Base.getindex(f::BispInterpolation, i::Int, j::Int) = f.f[i,j]
 Base.getindex(f::BispInterpolation, I, J) = [f.f[i,j] for i in I, j in J]
 
+Base.ndims(af::BispInterpolation) = length(size(af.f))
+
 Base.start(::BispInterpolation) = 1
 Base.next(f::BispInterpolation, state) = (f[state], state+1)
 Base.done(f::BispInterpolation, s) = s > length(f)

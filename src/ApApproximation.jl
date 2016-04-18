@@ -1,7 +1,9 @@
 module ApApproximation
 
-export BispectralSet,
+export Frequency,
+BispectralSet,
 camembert,
+evaluate,
 ap,
 iap,
 BesselMatrix,
