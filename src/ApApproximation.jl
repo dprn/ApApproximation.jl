@@ -2,6 +2,7 @@ module ApApproximation
 
 export Frequency,
 BispectralSet,
+cart,
 camembert,
 evaluate,
 ap,
