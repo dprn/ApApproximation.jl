@@ -40,7 +40,7 @@ function pol2cart{T<:Real}(pol::Array{T,2},
 
     z = CoordInterpGrid((rho, theta), pol, BCperiodic, InterpQuadratic)
 
-    f(x,y) = x^2+y^2 <= 1 ? z[sqrt(x^2+y^2), atan2(y,x)] : 0.
+    f(x,y) = x^2+y^2 <= 1 ? z[sqrt(x^2+y^2), atan2(y,x)] : 1.
     eltype(pol)[ f(x,y) for x = 1.:-2./(def_x-1):-1., y = -1.:2./(def_y-1):1.]
 end
 
@@ -54,7 +54,7 @@ function pol2cart{T<:Complex}(polA::Array{T,2}, def_x::Integer = round(Int,size(
     z_real = CoordInterpGrid((rho, theta), real(polA), BCperiodic, InterpQuadratic)
     z_imag = CoordInterpGrid((rho, theta), imag(polA), BCperiodic, InterpQuadratic)
 
-    f(z,x,y) = x^2+y^2 <= 1 ? z[sqrt(x^2+y^2), atan2(y,x)] : 0.
+    f(z,x,y) = x^2+y^2 <= 1 ? z[sqrt(x^2+y^2), atan2(y,x)] : 1.
     eltype(polA)[complex(f(z_real, x,y),f(z_imag, x,y)) for x = 1.:-2./(def_x-1):-1., y = -1.:2./(def_y-1):1.]
 end
 
@@ -66,7 +66,7 @@ end
 We store the interpolation vector for the image
 together with its bispectral set.
 """
-type BispInterpolation{N, T<:Number} <: AbstractArray
+immutable BispInterpolation{N, T<:Number} <: AbstractArray
     f::Array{T,2}
     E::BispectralSet{N, Float64}
 end
@@ -92,6 +92,8 @@ Base.done(f::BispInterpolation, s) = s > length(f)
 
 -{T<:Number, N}(f::BispInterpolation{N,T}, g::BispInterpolation{N,T}) =
     f.E==g.E ? BispInterpolation{N,T}(f.f-g.f, E) : error("They have to have the same bispectral set")
+
+Base.abs{N,T}(f::ApApproximation.BispInterpolation{N,T}) = BispInterpolation{N,Float64}(abs(f.f),f.E)
 
 """
 Evaluates the interpolated function at the given frequency `x`.
