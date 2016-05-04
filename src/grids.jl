@@ -31,29 +31,31 @@ Arguments:
 function pol2cart{T<:Real}(pol::Array{T,2}, 
                             def_x::Integer = round(Int,size(pol,1)), 
                             def_y::Integer=round(Int,size(pol,1));
-                            clip = true)
+                            clip = false)
     coeff = clip?sqrt(2):1.
     rho_step = coeff/(size(pol,1) - 1)
     rho = 0.:rho_step:coeff
     theta_step = 2/size(pol,2)
-    theta = (1-theta_step:-theta_step:-1)*pi
+    theta = (1/2-theta_step:-theta_step:-3/2)*pi
 
     z = CoordInterpGrid((rho, theta), pol, BCperiodic, InterpQuadratic)
 
-    eltype(pol)[ z[sqrt(x^2+y^2), atan2(y,x)] for x = 1.:-2./(def_x-1):-1., y = -1.:2./(def_y-1):1.]
+    f(x,y) = x^2+y^2 <= 1 ? z[sqrt(x^2+y^2), atan2(y,x)] : 0.
+    eltype(pol)[ f(x,y) for x = 1.:-2./(def_x-1):-1., y = -1.:2./(def_y-1):1.]
 end
 
-function pol2cart{T<:Complex}(polA::Array{T,2}, def_x::Integer = round(Int,size(pol,1)), def_y::Integer=round(Int,size(pol,1)),clip = true)
+function pol2cart{T<:Complex}(polA::Array{T,2}, def_x::Integer = round(Int,size(pol,1)), def_y::Integer=round(Int,size(pol,1)),clip = false)
     coeff = clip?sqrt(2):1.
     rho_step = coeff/(size(pol,1) - 1)
     rho = 0.:rho_step:coeff
     theta_step = 2/size(pol,2)
-    theta = (1-theta_step:-theta_step:-1)*pi
+    theta = (1/2-theta_step:-theta_step:-3/2)*pi
 
     z_real = CoordInterpGrid((rho, theta), real(polA), BCperiodic, InterpQuadratic)
     z_imag = CoordInterpGrid((rho, theta), imag(polA), BCperiodic, InterpQuadratic)
 
-    [complex(z_real[sqrt(x^2+y^2), atan2(y,x)],z_imag[sqrt(x^2+y^2), atan2(y,x)] ) for x = 1.:-2./(def_x-1):-1., y = -1.:2./(def_y-1):1.]
+    f(z,x,y) = x^2+y^2 <= 1 ? z[sqrt(x^2+y^2), atan2(y,x)] : 0.
+    eltype(polA)[complex(f(z_real, x,y),f(z_imag, x,y)) for x = 1.:-2./(def_x-1):-1., y = -1.:2./(def_y-1):1.]
 end
 
 #####################################
