@@ -14,18 +14,20 @@ where val is always assumed to be in [0,1)
 immutable Angle{N, T<:Real}
     val::T          # value in the camembert slice
     slice::Int                  # camembert slice
+
+    function Angle(val, n)
+        if 0<=val<1
+            new(val, mod(n, N))
+        elseif val>=0
+            new(val%1, mod((div(val,1)+n),N))
+        else   # val<0
+            new(1+val%1, mod((N+div(val,1)+n-1),N))
+        end
+    end
 end
 
 Angle{T<:Real}(val::T, N::Int) = Angle(val, 0, N)
-function Angle{T<:Real}(val::T, n::Int, N::Int)
-    if 0<=val<1
-        Angle{N,T}(val, mod(n, N))
-    elseif val>=0
-        Angle{N,T}(val%1, mod((div(val,1)+n),N))
-    else   # val<0
-        Angle{N,T}(1+val%1, mod((N+div(val,1)+n-1),N))
-    end
-end
+Angle{T<:Real}(val::T, n::Int, N::Int) = Angle{N,T}(val, n)
 
 camembert{N, T<:Real}(::Angle{N, T}) = N
 eltype{N, T<:Real}(::Angle{N, T}) = T
@@ -62,6 +64,8 @@ end
 sin(a::Angle) = sin(convert(Float64, a))
 cos(a::Angle) = cos(convert(Float64, a))
 
+opposite(x::Angle) = Angle(value(x)+camembert(x)/2, slice(x), camembert(x))
+
 ###############
 # FREQUENCIES #
 ###############
@@ -71,31 +75,50 @@ cos(a::Angle) = cos(convert(Float64, a))
 """
 immutable Frequency{N, T<:Real}
     λ::T
-    ω::Angle{N}
+    ω::Angle{N, T}
+
+    Frequency(λ, ω) = λ == 0 ? new(0., 0*ω) : new(λ, ω)
 end
 
+Frequency{R<:Real}(a::R, b::Angle) = Frequency{camembert(b), typeof(a)}(a, b)
 Frequency{R<:Real}(a::R, x...) = Frequency{x[end], typeof(a)}(a, Angle(x...))
 
-slice(x::Frequency) = slice(x.ω)
-camembert{T<:Real,N}(::Frequency{N,T}) = N
+λ(x::Frequency) = x.λ
+ω(x::Frequency) = x.ω
+camembert{N,T<:Real}(::Frequency{N,T}) = N
+slice(x::Frequency) = slice( ω(x) )
+eltype{N, T<:Real}(::Frequency{N,T}) = T
+show(io::IO, x::Frequency) = print(io, "Frequency{$(camembert(x)), $(eltype(x))}($(λ(x)), $(slice(x.ω) + value(x.ω)))")
+
 Base.angle(x::Frequency) = convert(Float64, x.ω)
-rotate(x::Frequency, n::Int) = Frequency(x.λ, rotate(x.ω,n))
+rotate(x::Frequency, n::Int) = Frequency(λ(x), rotate(ω(x),n))
 
-==(x::Frequency, y::Frequency) = x.λ == y.λ && x.ω == y.ω
-isless(x::Frequency, y::Frequency) = x.λ < y.λ || (x.λ == y.λ && x.ω < y.ω)
+==(x::Frequency, y::Frequency) = λ(x) == λ(y) && ω(x) == ω(y)
+isless(x::Frequency, y::Frequency) = λ(x) < λ(y) || (λ(x) == λ(y) && ω(x) < ω(y))
 
--(a::Frequency) = Frequency(a.λ, -a.ω)
+-(a::Frequency) = Frequency(λ(a), opposite(ω(a)))
+
+*{T<:Real}(x::Frequency, b::T) = Frequency(b*λ(x), ω(x))
+*{T<:Real}(b::T, x::Frequency) = x*b
+
+function +(x::Frequency, y::Frequency)
+    @assert(camembert(x) == camembert(y))
+    Θ = (value(ω(x)) + slice(x)) + atan2( λ(y)sin(ω(y)-ω(x)), λ(x) + λ(y)cos(ω(y)-ω(x)) )*camembert(x)/(2pi)
+    ρ = sqrt(abs( λ(x)^2 + λ(y)^2 +2(λ(x)*λ(y))*cos(ω(x)-ω(y))))
+    Frequency(ρ, Θ, camembert(x))
+end
+-(a::Frequency, b::Frequency) = a + (-b)
 
 """
 Product of two frequencies.
 """
-composition{T<:Real,N}(x::Frequency{N,T}, y::Frequency{N,T}) = Frequency{N,T}(x.λ*y.λ, x.ω-y.ω)
+composition(x::Frequency, y::Frequency) = Frequency(λ(x)*λ(y), ω(x)-ω(y))
 
 """
 Cartesian coordinates of the frequency.
 """
-cart(x::Frequency) = (x.λ*cos(x.ω), x.λ*sin(x.ω))
-cart{T<:Real, N}(v::Vector{Frequency{N, T}}) = (T[x.λ*cos(angle(x)) for x in v], T[x.λ*sin(angle(x)) for x in v])
+cart(x::Frequency) = (λ(x)cos(ω(x)), λ(x)sin(ω(x)))
+cart{T<:Real, N}(v::Vector{Frequency{N, T}}) = (T[λ(x)*cos(ω(x)) for x in v], T[λ(x)*sin(ω(x)) for x in v])
 
 normalize(x::Frequency) = rotate(x, -slice(x))
 
