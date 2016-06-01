@@ -166,10 +166,6 @@ done(E::BispectralSet, s) = s > prod(size(E))
 
 cart(E::BispectralSet) = cart(E[:])
 
-# -------------------- #
-# MODIFIED UP TO HERE! #
-# -------------------- #
-
 """
 Approximate equality between frequencies
 """
@@ -224,6 +220,41 @@ function findin(x::Frequency, E::BispectralSet)
     return 0,0
 end
 
+function approx_unique(v::Vector)
+    x = issorted(v) ? v : sort(v)
+    out = Vector{eltype(v)}()
+    @inbounds for i in 1:length(v)-1
+        if abs(x[i] - x[i+1]) > TOL
+            push!(out, x[i])
+        end
+    end
+    push!(out, x[end])
+    out
+end
+
+radii{N, T<:Real}(E::BispectralSet{N,T}) = T[ λ(E[i]) for i in 1:size(E,1) ] |> approx_unique
+angles{N,T<:Real}(E::BispectralSet{N,T}) = T[ value( ω(E[i]) ) for i in 1:size(E,1) ] |> approx_unique
+
+"""
+Angular definition
+"""
+angles_def(E::BispectralSet) = angles(E) |> extract_def
+
+"""
+Radial definiton
+"""
+radius_def(E::BispectralSet) = radii(E) |> extract_def
+
+"""
+Extracts the minimal definition required to encode the values of the given
+vecor in a regular grid (up to TOL).
+"""
+function extract_def(v::Vector)
+    vv = (circshift(v,-1)-v)[1:end-1] |> approx_unique
+    xx = round(Int, map( x->round(x, TOLexp), vv) / TOL)
+    TOL*foldl(gcd, xx)
+end
+
 """
 Extracts a vector `angles` such that `angles[i]` contains the
 number of elements in the camembert slice at the radius `i`.
@@ -234,32 +265,10 @@ function camemebert_angles{N,T<:Real}(E::BispectralSet{N,T})
     angles = zeros(Int, length(ρs))
     pos_ρ = 1
     for i in 1:length(ρs)
-        while ρs[i] == E[pos_ρ].λ
+        while ρs[i] == λ(E[pos_ρ])
             angles[i] += 1
-            pos_ρ+=1
+            pos_ρ += 1
         end
     end
     angles
-end
-
-#############################
-# EXTRACT RADIAL DEFINITION #
-#############################
-
-Base.den{T<:Integer}(x::Vector{Rational{T}}) = map(den, x)
-Base.angle(E::BispectralSet) = Rational{Int}[E[i].ω.val for i in 1:size(E,1)] |> unique
-radii{T<:Real,N}(E::BispectralSet{N,T}) = T[E[i].λ for i in 1:size(E,1)] |> unique
-angles_def(E::BispectralSet) = angle(E) |> den |> lcm
-
-function Base.gcd{T<:Integer}(a::Rational{T}, b::Rational{T})
-    l = lcm(den(a),den(b))
-    gcd(num(a)*gcd(den(a),l), num(b)*gcd(den(b),l))//l
-end
-Base.gcd{T<:Real}(a::T, b::T) = gcd(rationalize(Int,a), rationalize(Int, b))
-Base.gcd{T<:Real, R<:Integer}(a::Rational{R}, b::T) = gcd(a, rationalize(Int, b))
-
-radius_def(E::BispectralSet) =  radius_def(radii(E))
-function radius_def{T<:Real}(x::Vector{T})
-    v = (x-circshift(x,1))[2:end]
-    foldl(gcd, v)
 end

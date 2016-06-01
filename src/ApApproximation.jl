@@ -15,7 +15,8 @@ BispInterpolation,
 rotate,
 translate
 
-const TOL=1e-5
+const TOLexp = 5
+const TOL = 10.0^(-TOLexp)
 
 include("bispectralset.jl")
 
