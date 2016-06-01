@@ -166,6 +166,11 @@ done(E::BispectralSet, s) = s > prod(size(E))
 
 cart(E::BispectralSet) = cart(E[:])
 
+# -------------------- #
+# MODIFIED UP TO HERE! #
+# -------------------- #
+
+
 """
 Generates a BispectralSet given a vector (`cutoff`)
 of tuples of the type (n, range), where range are the radii of the frequencies
