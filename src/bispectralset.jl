@@ -131,23 +131,22 @@ A bispectral set is a special vector of frequencies.
 """
 immutable BispectralSet{N, T<:Real} <: AbstractArray{Frequency{N,T},1}
     pts::Vector{Frequency{N, T}}
+
+    function BispectralSet(pts::Vector{Frequency{N,T}})
+        @assert all(x->x<=1,[slice(x) for x in pts]) "Frequencies must be in [0,2π/N)"
+        x = issorted(pts) ? pts : sort(pts)
+        new(x)
+    end
 end
 
-function BispectralSet{T<:Real, N}(pts::Frequency{N, T})
-    @assert all(x->x<=1,[slice(x) for x in pts]) "Frequencies must be in [0,2π/N)"
-#     @assert all(x->x==N,[camembert(x) for x in pts]) "Number of slices must be the N for all frequencies"
-    x = issorted(pts) ? pts : sort(pts)
-    BispectralSet{camembert(pts[1]), T}(x)
-end
-
-# BispectralSet{T<:Real, N}(N::Int,pts::Vector{Frequency{T}}) = BispectralSet{T}(N,pts)
+BispectralSet{N, T<: Real}(pts::Vector{Frequency{N,T}}) = BispectralSet{N,T}(pts)
 
 camembert{N, T<:Real}(::BispectralSet{N,T}) = N
 
-Base.size(E::BispectralSet) = (length(E.pts), camembert(E))
-Base.size(E::BispectralSet, n) = size(E)[n]
-# Base.linearindexing(::Type{BispectralSet}) = Base.LinearSlow()
-function Base.getindex(E::BispectralSet, i::Int)
+eltype(E::BispectralSet) = eltype(E.pts)
+size(E::BispectralSet) = (length(E.pts), camembert(E))
+size(E::BispectralSet, n) = size(E)[n]
+function getindex(E::BispectralSet, i::Int)
     if 1<= i <= size(E,1)
         E.pts[i]
     else
@@ -156,14 +155,14 @@ function Base.getindex(E::BispectralSet, i::Int)
         E[r, d+1]
     end
 end
-Base.getindex(E::BispectralSet, i::Int, n::Int) = 1<=n<=camembert(E) ? rotate(E.pts[i], n-1) : BoundsError(E, [i,n])
-Base.getindex{T<:Real,N}(E::BispectralSet{N,T}, ::Colon, ns) = Frequency{N,T}[E[i,n] for i in 1:size(E,1), n in ns]
-Base.getindex{T<:Real,N}(E::BispectralSet{N,T}, is, ns) = Frequency{N,T}[E[i,n] for i in is, n in ns]
-Base.getindex{T<:Real,N}(E::BispectralSet{N,T}, ::Colon) = vec(E[1:size(E,1), 1:size(E,2)])
+getindex(E::BispectralSet, i::Int, n::Int) = 1<=n<=camembert(E) ? rotate(E[i], n-1) : BoundsError(E, [i,n])
+getindex{T<:Real,N}(E::BispectralSet{N,T}, ::Colon, ns) = Frequency{N,T}[E[i,n] for i in 1:size(E,1), n in ns]
+getindex{T<:Real,N}(E::BispectralSet{N,T}, is, ns) = Frequency{N,T}[E[i,n] for i in is, n in ns]
+getindex{T<:Real,N}(E::BispectralSet{N,T}, ::Colon) = vec(E[1:size(E,1), 1:size(E,2)])
 
-Base.start(::BispectralSet) = 1
-Base.next(E::BispectralSet, state) = (E[state], state+1)
-Base.done(E::BispectralSet, s) = s > prod(size(E))
+start(::BispectralSet) = 1
+next(E::BispectralSet, state) = (E[state], state+1)
+done(E::BispectralSet, s) = s > prod(size(E))
 
 cart(E::BispectralSet) = cart(E[:])
 
