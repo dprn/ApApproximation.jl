@@ -1,4 +1,4 @@
-import Base: convert, ==, isless, +, -, *, sin, cos, angle
+importall Base
 
 typealias RatInt Union{Rational, Integer}
 
@@ -11,57 +11,56 @@ Encodes the angle
     2pi/N*(val + slice)
 where val is always assumed to be in [0,1)
 """
-immutable Angle{N}
-    val::Rational{Int}          # value in the camembert slice
+immutable Angle{N, T<:Real}
+    val::T          # value in the camembert slice
     slice::Int                  # camembert slice
 end
 
-Angle{T<:RatInt}(val::T, N::Int) = Angle{N}(val, 0)
-Angle{T<:Integer}(val::T, n::Int, N::Int) = Angle{N}(convert(Rational{Int},val), n)
-function Angle(val::Rational{Int}, n::Int, N::Int)
+Angle{T<:Real}(val::T, N::Int) = Angle(val, 0, N)
+function Angle{T<:Real}(val::T, n::Int, N::Int)
     if 0<=val<1
-        Angle{N}(val, n)
+        Angle{N,T}(val, mod(n, N))
     elseif val>=0
-        Angle{N}(val%1, (div(val,1)+n)%N)
-    else                        # val<0
-        Angle{N}(1+val%1, (N+div(val,1)+n-1)%N)
+        Angle{N,T}(val%1, mod((div(val,1)+n),N))
+    else   # val<0
+        Angle{N,T}(1+val%1, mod((N+div(val,1)+n-1),N))
     end
 end
 
-camembert{N}(::Angle{N}) = N
+camembert{N, T<:Real}(::Angle{N, T}) = N
+eltype{N, T<:Real}(::Angle{N, T}) = T
+value(x::Angle) = x.val
 slice(x::Angle) = x.slice
-rotate(a::Angle, n::Int) = Angle{camembert(a)}(a.val, (a.slice + n)%camembert(a))
+similar(x,y...) = Angle{camembert(x), eltype(x)}(y...)
 
-convert(T::Type{AbstractFloat}, x::Angle) = (convert(T, x.val)+x.slice)*2pi/camembert(x)
-convert{T<:AbstractFloat}(::Type{T}, x::Angle) = (convert(T, x.val)+x.slice)*2pi/camembert(x)
-convert{T<:Rational{Int}}(::Type{Angle}, x::T) = Angle(x, 1)
-convert{T<:Integer}(::Type{Angle}, x::T) = Angle(x//1, 1)
+rotate(x::Angle, n::Int) = similar(x, value(x), (slice(x) + n)%camembert(x))
 
-==(a::Angle, b::Angle) = camembert(a) == camembert(b) && ((a.val == b.val && a.slice == b.slice) || a.val == b.val == 0)
+convert{T<:AbstractFloat}(::Type{T}, x::Angle) = ( convert(T, value(x)) + slice(x) )*2pi/camembert(x)
+
+==(a::Angle, b::Angle) = camembert(a) == camembert(b) && ((value(a) == value(b) && slice(a) == slice(b)) || value(a) == value(b) == 0)
 isless(a::Angle, b::Angle) = (a.val + a.slice) < (b.val + b.slice)
 
 function +(a::Angle, b::Angle)
     if camembert(a) == camembert(b)
-        Angle(a.val+b.val, a.slice + b.slice, camembert(a))
+        Angle(value(a)+value(b), slice(a) + slice(b), camembert(a))
     else
         error("Angles needs to have the same camembert slices")
     end
 end
 
-+{T<:RatInt}(a::Angle, b::T) = Angle(a.val+b, a.slice, camembert(a)) # ATTENTION!
-+{T<:RatInt}(b::T, a::Angle) = a+b
++{T<:Real}(a::Angle, b::T) = Angle(a.val+b, a.slice, camembert(a))
++{T<:Real}(b::T, a::Angle) = a + b
 
 -(a::Angle) = Angle(-a.val, -a.slice, camembert(a))
 -(a::Angle, b::Angle) = a+(-b)
--{T<:RatInt}(a::Angle, b::T) = -a+b
--{T<:RatInt}(b::T, a::Angle) = b+(-a)
+-{T<:Real}(a::Angle, b::T) = -a+b
+-{T<:Real}(b::T, a::Angle) = b+(-a)
 
-*{T<:RatInt}(a::Angle, b::T) = Angle(a.val*b, a.slice*b, camembert(a))
-*{T<:RatInt}(b::T, a::Angle) = a*b
+*{T<:Real}(a::Angle, b::T) = Angle(a.val*b, a.slice*b, camembert(a))
+*{T<:Real}(b::T, a::Angle) = a*b
 
 sin(a::Angle) = sin(convert(Float64, a))
 cos(a::Angle) = cos(convert(Float64, a))
-
 
 ###############
 # FREQUENCIES #
