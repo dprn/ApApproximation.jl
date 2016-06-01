@@ -194,7 +194,7 @@ function fill_freq_vector(N::Int, angles::Int, radii)
     v = Vector{Frequency{N, Float64}}(n*angles)
     pos = 1
     for i in 1:n, j = 0:angles-1
-        @inbounds v[pos] = Frequency(radii[i], j//angles, N) # j*2pi/N/angles)
+        @inbounds v[pos] = Frequency(radii[i], j/angles, N) # j*2pi/N/angles)
         pos += 1
     end
     v
