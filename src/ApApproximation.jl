@@ -15,6 +15,8 @@ BispInterpolation,
 rotate,
 translate
 
+const TOL=1e-5
+
 include("bispectralset.jl")
 
 using Grid

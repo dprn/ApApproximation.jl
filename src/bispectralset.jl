@@ -33,9 +33,8 @@ camembert{N, T<:Real}(::Angle{N, T}) = N
 eltype{N, T<:Real}(::Angle{N, T}) = T
 value(x::Angle) = x.val
 slice(x::Angle) = x.slice
-similar(x,y...) = Angle{camembert(x), eltype(x)}(y...)
 
-rotate(x::Angle, n::Int) = similar(x, value(x), (slice(x) + n)%camembert(x))
+rotate(x::Angle, n::Int) = Angle(value(x), (slice(x) + n)%camembert(x), camembert(x))
 
 convert{T<:AbstractFloat}(::Type{T}, x::Angle) = ( convert(T, value(x)) + slice(x) )*2pi/camembert(x)
 
@@ -63,6 +62,7 @@ end
 
 sin(a::Angle) = sin(convert(Float64, a))
 cos(a::Angle) = cos(convert(Float64, a))
+abs(a::Angle) = abs(convert(Float64, a))
 
 opposite(x::Angle) = Angle(value(x)+camembert(x)/2, slice(x), camembert(x))
 
@@ -155,7 +155,7 @@ function getindex(E::BispectralSet, i::Int)
         E[r, d+1]
     end
 end
-getindex(E::BispectralSet, i::Int, n::Int) = 1<=n<=camembert(E) ? rotate(E[i], n-1) : BoundsError(E, [i,n])
+getindex(E::BispectralSet, i::Int, n::Int) = 1<=i<=size(E,1) && 1<=n<=size(E,2) ? rotate(E[i], n-1) : BoundsError(E, [i,n])
 getindex{T<:Real,N}(E::BispectralSet{N,T}, ::Colon, ns) = Frequency{N,T}[E[i,n] for i in 1:size(E,1), n in ns]
 getindex{T<:Real,N}(E::BispectralSet{N,T}, is, ns) = Frequency{N,T}[E[i,n] for i in is, n in ns]
 getindex{T<:Real,N}(E::BispectralSet{N,T}, ::Colon) = vec(E[1:size(E,1), 1:size(E,2)])
@@ -170,6 +170,10 @@ cart(E::BispectralSet) = cart(E[:])
 # MODIFIED UP TO HERE! #
 # -------------------- #
 
+"""
+Approximate equality between frequencies
+"""
+approx_eq(a::Frequency, b::Frequency) = abs(λ(a)-λ(b)) <= TOL && abs(ω(a)-ω(b)) <= TOL/λ(a)
 
 """
 Generates a BispectralSet given a vector (`cutoff`)
@@ -199,18 +203,18 @@ end
 """
 Simple search by bisection
 """
-function Base.findin(x::Frequency, E::BispectralSet)
+function findin(x::Frequency, E::BispectralSet)
     y = normalize(x)
     left = 1
-    (y == E[left]) && (return left, slice(x)+1)
+    approx_eq(y, E[left]) && (return left, slice(x)+1)
     right = size(E,1)
-    (y == E[right]) && (return right, slice(x)+1)
+    approx_eq(y, E[right]) && (return right, slice(x)+1)
     middle = round(Int, size(E,1)/2)
     for i in 1:size(E,1)
         ((middle <= left) || middle >= right) && break
-        if y == E[middle]
+        if approx_eq(y, E[middle])
             return middle, slice(x)+1
-        elseif    y > E[middle]
+        elseif  y > E[middle]
             left = middle
         else                    #if y<E[middle]
             right = middle
