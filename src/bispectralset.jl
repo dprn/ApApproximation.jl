@@ -18,12 +18,12 @@ end
 
 Angle{T<:RatInt}(val::T, N::Int) = Angle{N}(val, 0)
 Angle{T<:Integer}(val::T, n::Int, N::Int) = Angle{N}(convert(Rational{Int},val), n)
-function Angle(val::Rational{Int}, n::Int, N::Int) 
+function Angle(val::Rational{Int}, n::Int, N::Int)
     if 0<=val<1
         Angle{N}(val, n)
     elseif val>=0
         Angle{N}(val%1, (div(val,1)+n)%N)
-    else                        # val<0 
+    else                        # val<0
         Angle{N}(1+val%1, (N+div(val,1)+n-1)%N)
     end
 end
@@ -40,7 +40,7 @@ convert{T<:Integer}(::Type{Angle}, x::T) = Angle(x//1, 1)
 ==(a::Angle, b::Angle) = camembert(a) == camembert(b) && ((a.val == b.val && a.slice == b.slice) || a.val == b.val == 0)
 isless(a::Angle, b::Angle) = (a.val + a.slice) < (b.val + b.slice)
 
-function +(a::Angle, b::Angle) 
+function +(a::Angle, b::Angle)
     if camembert(a) == camembert(b)
         Angle(a.val+b.val, a.slice + b.slice, camembert(a))
     else
@@ -48,7 +48,7 @@ function +(a::Angle, b::Angle)
     end
 end
 
-+{T<:RatInt}(a::Angle, b::T) = Angle(a.val+b, a.slice, camembert(a)) # ATTENTION! 
++{T<:RatInt}(a::Angle, b::T) = Angle(a.val+b, a.slice, camembert(a)) # ATTENTION!
 +{T<:RatInt}(b::T, a::Angle) = a+b
 
 -(a::Angle) = Angle(-a.val, -a.slice, camembert(a))
@@ -75,7 +75,7 @@ immutable Frequency{N, T<:Real}
     ω::Angle{N}
 end
 
-Frequency{R<:Real}(a::R, x...) = Frequency{x[end], R}(a, Angle(x...))
+Frequency{R<:Real}(a::R, x...) = Frequency{x[end], typeof(a)}(a, Angle(x...))
 
 slice(x::Frequency) = slice(x.ω)
 camembert{T<:Real,N}(::Frequency{N,T}) = N
@@ -125,9 +125,9 @@ camembert{N, T<:Real}(::BispectralSet{N,T}) = N
 Base.size(E::BispectralSet) = (length(E.pts), camembert(E))
 Base.size(E::BispectralSet, n) = size(E)[n]
 # Base.linearindexing(::Type{BispectralSet}) = Base.LinearSlow()
-function Base.getindex(E::BispectralSet, i::Int) 
-    if 1<= i <= size(E,1) 
-        E.pts[i] 
+function Base.getindex(E::BispectralSet, i::Int)
+    if 1<= i <= size(E,1)
+        E.pts[i]
     else
         r = mod1(i, size(E,1))
         d = div(i-r, size(E,1))
@@ -146,7 +146,7 @@ Base.done(E::BispectralSet, s) = s > prod(size(E))
 cart(E::BispectralSet) = cart(E[:])
 
 """
-Generates a BispectralSet given a vector (`cutoff`) 
+Generates a BispectralSet given a vector (`cutoff`)
 of tuples of the type (n, range), where range are the radii of the frequencies
 and n the number of equispaced angles in the camembert slice for each one of them.
 """
@@ -183,7 +183,7 @@ function Base.findin(x::Frequency, E::BispectralSet)
     for i in 1:size(E,1)
         ((middle <= left) || middle >= right) && break
         if y == E[middle]
-            return middle, slice(x)+1 
+            return middle, slice(x)+1
         elseif    y > E[middle]
             left = middle
         else                    #if y<E[middle]
@@ -219,7 +219,7 @@ end
 Base.den{T<:Integer}(x::Vector{Rational{T}}) = map(den, x)
 Base.angle(E::BispectralSet) = Rational{Int}[E[i].ω.val for i in 1:size(E,1)] |> unique
 radii{T<:Real,N}(E::BispectralSet{N,T}) = T[E[i].λ for i in 1:size(E,1)] |> unique
-angles_def(E::BispectralSet) = angle(E) |> den |> lcm 
+angles_def(E::BispectralSet) = angle(E) |> den |> lcm
 
 function Base.gcd{T<:Integer}(a::Rational{T}, b::Rational{T})
     l = lcm(den(a),den(b))
@@ -233,5 +233,3 @@ function radius_def{T<:Real}(x::Vector{T})
     v = (x-circshift(x,1))[2:end]
     foldl(gcd, v)
 end
-
-
