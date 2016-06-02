@@ -2,6 +2,7 @@ module ApApproximation
 
 export Frequency,
 BispectralSet,
+plot,
 cart,
 camembert,
 evaluate,
@@ -17,6 +18,9 @@ translate
 
 const TOLexp = 5
 const TOL = 10.0^(-TOLexp)
+
+using Plots
+plotlyjs()
 
 include("bispectralset.jl")
 

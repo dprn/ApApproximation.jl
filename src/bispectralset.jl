@@ -272,3 +272,26 @@ function camemebert_angles{N,T<:Real}(E::BispectralSet{N,T})
     end
     angles
 end
+
+# ################### #
+# PLOT BISPECTRAL SET #
+# ################### #
+
+import Plots.plot
+
+function plot(E::BispectralSet)
+    x, y = cart(E)
+    ρ_max = maximum([x.λ for x in E])
+
+    # Plot the set E
+    p = scatter(x, y, marker = (:red, 2.5),
+            legend = false,
+            size = (315,300),
+            title = "Set E")
+
+    # Plot the lines dividing the slices
+    for ang in 0:2pi/camembert(E):2pi*(1-1/camembert(E))
+        plot!(t-> cos(ang)*t, t-> sin(ang)*t, 0:.1:ρ_max*(1+.1), line = (:black, :dot, 2))
+    end
+    p
+end
