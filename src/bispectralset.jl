@@ -125,7 +125,7 @@ normalize(x::Frequency) = rotate(x, -slice(x))
 Approximate equality between frequencies
 """
 approx_eq(a::Frequency) = approx_eq(a, zero(typeof(a)))
-approx_eq(a::Frequency, b::Frequency) = abs(λ(a)-λ(b)) <= TOL && abs(ω(a)-ω(b)) <= TOL/λ(a)
+approx_eq(a::Frequency, b::Frequency) = abs(λ(a)-λ(b)) <= TOL && dist(ω(a),ω(b)) <= TOL/λ(a)
 
 """
 Unique w.r.t. approximate equality
@@ -241,6 +241,8 @@ function approx_unique(eq_test::Function, v::Vector)
     push!(out, x[end])
     out
 end
+
+
 
 radii{N, T<:Real}(E::BispectralSet{N,T}) = T[ λ(E[i]) for i in 1:size(E,1) ] |> approx_unique
 angles{N,T<:Real}(E::BispectralSet{N,T}) = T[ value( ω(E[i]) ) for i in 1:size(E,1) ] |> approx_unique
