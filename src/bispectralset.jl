@@ -1,7 +1,5 @@
 importall Base
 
-typealias RatInt Union{Rational, Integer}
-
 ##########
 # ANGLES #
 ##########
@@ -39,7 +37,7 @@ rotate(x::Angle, n::Int) = Angle(value(x), (slice(x) + n)%camembert(x), camember
 convert{T<:AbstractFloat}(::Type{T}, x::Angle) = ( convert(T, value(x)) + slice(x) )*2pi/camembert(x)
 
 ==(a::Angle, b::Angle) = camembert(a) == camembert(b) && ((value(a) == value(b) && slice(a) == slice(b)) || value(a) == value(b) == 0)
-isless(a::Angle, b::Angle) = (a.val + a.slice) < (b.val + b.slice)
+isless(a::Angle, b::Angle) = (value(a) + slice(a)) < (value(b) + slice(b))
 
 function +(a::Angle, b::Angle)
     if camembert(a) == camembert(b)
