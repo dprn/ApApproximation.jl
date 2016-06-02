@@ -34,6 +34,7 @@ slice(x::Angle) = x.slice
 
 rotate(x::Angle, n::Int) = Angle(value(x), (slice(x) + n)%camembert(x), camembert(x))
 
+zero{N,T<:Real}(::Type{Angle{N,T}}) = Angle{N,T}(0., 0)
 convert{T<:AbstractFloat}(::Type{T}, x::Angle) = ( convert(T, value(x)) + slice(x) )*2pi/camembert(x)
 
 ==(a::Angle, b::Angle) = camembert(a) == camembert(b) && ((value(a) == value(b) && slice(a) == slice(b)) || value(a) == value(b) == 0)
@@ -58,9 +59,9 @@ end
 *{T<:Real}(a::Angle, b::T) = Angle(a.val*b, a.slice*b, camembert(a))
 *{T<:Real}(b::T, a::Angle) = a*b
 
-sin(a::Angle) = sin(convert(Float64, a))
-cos(a::Angle) = cos(convert(Float64, a))
-abs(a::Angle) = abs(convert(Float64, a))
+for f in [:cos, :sin, :abs]
+    @eval ($f)(a::Angle) = ($f)(convert(Float64, a))
+end
 
 opposite(x::Angle) = Angle(value(x)+camembert(x)/2, slice(x), camembert(x))
 
@@ -120,6 +121,17 @@ cart{T<:Real, N}(v::Vector{Frequency{N, T}}) = (T[λ(x)*cos(ω(x)) for x in v], 
 
 normalize(x::Frequency) = rotate(x, -slice(x))
 
+"""
+Approximate equality between frequencies
+"""
+approx_eq(a::Frequency) = approx_eq(a, zero(typeof(a)))
+approx_eq(a::Frequency, b::Frequency) = abs(λ(a)-λ(b)) <= TOL && abs(ω(a)-ω(b)) <= TOL/λ(a)
+
+"""
+Unique w.r.t. approximate equality
+"""
+approx_unique{N, T<:Real}(v::Vector{Frequency{N,T}}) = approx_unique(approx_eq, v)
+
 ###################
 # BISPECTRAL SETS #
 ###################
@@ -132,14 +144,15 @@ immutable BispectralSet{N, T<:Real} <: AbstractArray{Frequency{N,T},1}
 
     function BispectralSet(pts::Vector{Frequency{N,T}})
         @assert all(x->x<=1,[slice(x) for x in pts]) "Frequencies must be in [0,2π/N)"
-        x = issorted(pts) ? pts : sort(pts)
-        new(x)
+        x = approx_unique(pts)
+        new(issorted(x) ? x : sort(x))
     end
 end
 
 BispectralSet{N, T<: Real}(pts::Vector{Frequency{N,T}}) = BispectralSet{N,T}(pts)
 
 camembert{N, T<:Real}(::BispectralSet{N,T}) = N
+zero{N,T<:Real}(::Type{Frequency{N,T}}) = Frequency{N,T}(0., zero(Angle{N,T}) )
 
 eltype(E::BispectralSet) = eltype(E.pts)
 size(E::BispectralSet) = (length(E.pts), camembert(E))
@@ -154,20 +167,15 @@ function getindex(E::BispectralSet, i::Int)
     end
 end
 getindex(E::BispectralSet, i::Int, n::Int) = 1<=i<=size(E,1) && 1<=n<=size(E,2) ? rotate(E[i], n-1) : BoundsError(E, [i,n])
-getindex{T<:Real,N}(E::BispectralSet{N,T}, ::Colon, ns) = Frequency{N,T}[E[i,n] for i in 1:size(E,1), n in ns]
-getindex{T<:Real,N}(E::BispectralSet{N,T}, is, ns) = Frequency{N,T}[E[i,n] for i in is, n in ns]
-getindex{T<:Real,N}(E::BispectralSet{N,T}, ::Colon) = vec(E[1:size(E,1), 1:size(E,2)])
+getindex(E::BispectralSet, ::Colon, ns) = eltype(E)[E[i,n] for i in 1:size(E,1), n in ns]
+getindex(E::BispectralSet, is, ns) = eltype(E)[E[i,n] for i in is, n in ns]
+getindex(E::BispectralSet, ::Colon) = vec(E[1:size(E,1), 1:size(E,2)])
 
 start(::BispectralSet) = 1
 next(E::BispectralSet, state) = (E[state], state+1)
 done(E::BispectralSet, s) = s > prod(size(E))
 
 cart(E::BispectralSet) = cart(E[:])
-
-"""
-Approximate equality between frequencies
-"""
-approx_eq(a::Frequency, b::Frequency) = abs(λ(a)-λ(b)) <= TOL && abs(ω(a)-ω(b)) <= TOL/λ(a)
 
 """
 Generates a BispectralSet given a vector (`cutoff`)
@@ -218,11 +226,15 @@ function findin(x::Frequency, E::BispectralSet)
     return 0,0
 end
 
-function approx_unique(v::Vector)
+"""
+Unique w.r.t. approximate equality
+"""
+approx_unique{T<:Number}(v::Vector{T}) = approx_unique((x,y)->abs(x-y) <= TOL, v)
+function approx_unique(eq_test::Function, v::Vector)
     x = issorted(v) ? v : sort(v)
     out = Vector{eltype(v)}()
     @inbounds for i in 1:length(v)-1
-        if abs(x[i] - x[i+1]) > TOL
+        if !eq_test(x[i], x[i+1])
             push!(out, x[i])
         end
     end
