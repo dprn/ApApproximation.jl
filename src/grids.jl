@@ -28,8 +28,8 @@ Arguments:
 - `polA` : 2D vector of the image (indexed by row)
 - `def_x`, `def_y` : definition in x and y variables
 """
-function pol2cart{T<:Real}(pol::Array{T,2}, 
-                            def_x::Integer = round(Int,size(pol,1)), 
+function pol2cart{T<:Real}(pol::Array{T,2},
+                            def_x::Integer = round(Int,size(pol,1)),
                             def_y::Integer=round(Int,size(pol,1));
                             clip = false)
     coeff = clip?sqrt(2):1.
@@ -69,38 +69,45 @@ together with its bispectral set.
 immutable BispInterpolation{N, T<:Number} <: AbstractArray
     f::Array{T,2}
     E::BispectralSet{N, Float64}
+
+	function BispInterpolation(f, E)
+		(size(f) != size(E)) && error("f needs to have the same dimensions as E")
+		new(f,E)
+	end
 end
+
+BispInterpolation{N, T<: Number}(f::Array{T,2}, E::BispectralSet{N, Float64}) = BispInterpolation{N,T}(f, E)
 
 camembert{N, T<:Number}(::BispInterpolation{N, T}) = N
 
-Base.eltype{N, T<:Number}(::BispInterpolation{N,T}) = T
-Base.size(f::BispInterpolation) = size(f.f)
-Base.size(f::BispInterpolation, n) = size(f.f,n)
-Base.length(f::BispInterpolation, n) = prod(size(f))
-Base.linearindexing(::Type{BispInterpolation}) = Base.LinearFast()
-Base.getindex(f::BispInterpolation, i::Int) = f.f[i]
-Base.getindex(f::BispInterpolation, I) = [f.f[i] for i in I]
-Base.getindex(f::BispInterpolation, ::Colon) = [f.f[i] for i in 1:length(f)]
-Base.getindex(f::BispInterpolation, i::Int, j::Int) = f.f[i,j]
-Base.getindex(f::BispInterpolation, I, J) = [f.f[i,j] for i in I, j in J]
+eltype{N, T<:Number}(::BispInterpolation{N,T}) = T
+size(f::BispInterpolation) = size(f.f)
+size(f::BispInterpolation, n) = size(f.f,n)
+length(f::BispInterpolation, n) = prod(size(f))
+linearindexing(::Type{BispInterpolation}) = Base.LinearFast()
+getindex(f::BispInterpolation, i::Int) = f.f[i]
+getindex(f::BispInterpolation, I) = [f.f[i] for i in I]
+getindex(f::BispInterpolation, ::Colon) = [f.f[i] for i in 1:length(f)]
+getindex(f::BispInterpolation, i::Int, j::Int) = f.f[i,j]
+getindex(f::BispInterpolation, I, J) = [f.f[i,j] for i in I, j in J]
 
-Base.ndims(af::BispInterpolation) = length(size(af.f))
+ndims(af::BispInterpolation) = length(size(af.f))
 
-Base.start(::BispInterpolation) = 1
-Base.next(f::BispInterpolation, state) = (f[state], state+1)
-Base.done(f::BispInterpolation, s) = s > length(f)
+start(::BispInterpolation) = 1
+next(f::BispInterpolation, state) = (f[state], state+1)
+done(f::BispInterpolation, s) = s > length(f)
 
 -{T<:Number, N}(f::BispInterpolation{N,T}, g::BispInterpolation{N,T}) =
     f.E==g.E ? BispInterpolation{N,T}(f.f-g.f, E) : error("They have to have the same bispectral set")
 
-Base.abs{N,T}(f::ApApproximation.BispInterpolation{N,T}) = BispInterpolation{N,Float64}(abs(f.f),f.E)
+abs{N,T}(f::ApApproximation.BispInterpolation{N,T}) = BispInterpolation{N,Float64}(abs(f.f),f.E)
 
 """
 Evaluates the interpolated function at the given frequency `x`.
 If `x` is not in the bispectral set, it returns 0.
 """
 function evaluate(f::BispInterpolation, x::Frequency)
-    i,n = findin(x, f.E) 
+    i,n = findin(x, f.E)
     (i != 0) ? f[i,n] : 0.
 end
 
@@ -116,8 +123,6 @@ function translate{T<:Complex, N}(af::BispInterpolation{N,T}, ρ::Real, θ::Real
     af_trans = T[af[i,j]*exp(im*af.E[i].λ*ρ*cos(float(af.E[i,j].ω)-θ)) for i in 1:size(af.E,1), j in 1:size(af.E,2)]
     BispInterpolation(af_trans, af.E)
 end
-
-
 
 ###########################
 # INTERPOLATION FUNCTIONS #
@@ -160,12 +165,12 @@ function bispectral2pol(f::BispInterpolation)
 end
 
 """
-Auxiliary function for `bispectral2pol`, which linearly :interpolates the zero values of a vector
+Auxiliary function for `bispectral2pol`, which linearly interpolates the zero values of a vector
 """
 function interpolate!(x)
     v = find(x)
     v == [] && (return x)
-    if x[end]==0 
+    if x[end]==0
         x[end] = x[v[end]]
         push!(v, length(x))
     end
@@ -177,4 +182,3 @@ function interpolate!(x)
     end
     x
 end
-
