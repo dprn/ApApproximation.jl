@@ -132,25 +132,12 @@ end
 Interpolates an image, given as a 2D vector, on the given bispectral set.
 """
 function cartesian2bispectral{T<:Real, R<:Real, N}(img::Array{T,2}, E::BispectralSet{N,R})
-    ρs = radii(E)
-    angl = camemebert_angles(E)
-    def_rho = length(ρs)
-    max_angles = maximum(angl)
-    def_theta = N * max_angles
+	ρ_max = maximum(E) |> λ
+	x = ρ_max*(-1:(2./(size(img,1) - 1)):1)
+	y = ρ_max*(-1:(2./(size(img,2) - 1)):1)
+	z = CoordInterpGrid((x,y), img, BCperiodic, InterpQuadratic)
 
-    imgPol = cart2pol(img, def_rho, def_theta)
-
-    f = zeros(eltype(img), size(E))
-    pos = 0
-    for i in 1:length(ρs)
-        for j = 1:angl[i]
-            pos += 1
-            for k = 1:N
-                f[pos, k] = imgPol[i, j + (k-1) * max_angles]
-            end
-        end
-    end
-
+	f = T[z[cart(E[i,j])...] for i in 1:size(E,1), j in 1:size(E,2)]
 	BispInterpolation{N,T}(f, E)
 end
 
