@@ -169,3 +169,11 @@ function interpolate!(x)
     end
     x
 end
+
+"""
+Interpolates the value of a BispInterpolation on a cartsian grid, via a polar grid interpolation
+"""
+function bispectral2cart(f, def_x, def_y; clamped = true) 
+    I = pol2cart(bispectral2pol(f), def_x, def_y)
+    clamped ? clamp(I,0,1) : I
+end
