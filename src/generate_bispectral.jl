@@ -22,31 +22,36 @@ function addi{N,T<:Real}(a::Frequency{N,T},b::Frequency{N,T}, S::Set{Frequency{N
     S
 end
 
-function generate_set(N, n; save_plot=false)
+function generate_set(N, n; verbose = false)#save_plot=false)
     D = Set{Frequency{N,Float64}}([Frequency(1.0, 0., N)])
-    generate_set(D, n, save_plot=save_plot)
+    generate_set(D, n, verbose = verbose)
 end
 
-function generate_set{N}(D::Set{Frequency{N,Float64}}, n; save_plot=false)
-    AC = D
-    NC = Set{Frequency{N,Float64}}()
-    for iteration in 1:n
-        println("Iteration $iteration started:")
-        @time for ac in AC, b in D
-            for i in 0:N-1
-                    a=rotate(ac,i)
-                if !approx_eq(a, b)
-                    addi(a, b, NC,D)
-                end
-            end
+function generate_set{N}(D::Set{Frequency{N,Float64}}, n; verbose = false) #, save_plot=false)
+  verbose && println("----------------------------------")
+  verbose && println("    GENERATING BISPECTRAL SET")
+  verbose && println("----------------------------------")
+  AC = D
+  NC = Set{Frequency{N,Float64}}()
+  for iteration in 1:n
+    verbose && println("Iteration $iteration started:")
+    tic()
+    for ac in AC, b in D
+      for i in 0:N-1
+        a=rotate(ac,i)
+        if !approx_eq(a, b)
+          addi(a, b, NC,D)
         end
-        AC = NC
-        D = union(D, AC)
-        println("Added $(length(AC)) frequencies")
-        println("Total frequencies = $(length(D))")
-        NC = Set{Frequency{N,Float64}}()
-        save_plot && png(plot(D),"plottings_$iteration")
-        println("----------------------------------")
+      end
     end
-    BispectralSet(collect(D))
+    verbose && println("Elapsed time: $(toq())")
+    AC = NC
+    D = union(D, AC)
+    verbose && println("Added $(length(AC)) frequencies")
+    verbose && println("Total frequencies = $(length(D))")
+    NC = Set{Frequency{N,Float64}}()
+    # save_plot && png(plot(D),"plottings_$iteration")
+    verbose && println("----------------------------------")
+  end
+  BispectralSet(collect(D))
 end
