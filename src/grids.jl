@@ -171,9 +171,27 @@ function interpolate!(x)
 end
 
 """
-Interpolates the value of a BispInterpolation on a cartsian grid, via a polar grid interpolation
+Interpolates the value of a `BispInterpolation` on a cartsian grid, via a polar grid interpolation
 """
-function bispectral2cart(f, def_x, def_y; clamped = true) 
+function bispectral2cart(f, def_x, def_y; clamped = true)
     I = pol2cart(bispectral2pol(f), def_x, def_y)
     clamped ? clamp(I,0,1) : I
+end
+
+"""
+Evaluates a `BispInterpolation` on a cartesian grid, without interpolation
+"""
+function evaluate2cart(f::BispInterpolation, def::Int = 256)
+	# The clamp should not be necessary, but it is, at least for N = 8
+	to_index(x) = clamp(round(Int, div((x+1)/2, 1/def))+1, 1, 256)
+	ρ_max = maximum(f.E) |> λ
+
+	I = zeros(def, def)
+	ns = zeros(Int, def, def)
+	@inbounds for i in 1:size(f, 1), j in 1:size(f, 2)
+		xx, yy = map(to_index, collect(cart(f.E[i,j]*(1/ρ_max)) ))
+		I[xx,yy] = (I[xx,yy]*(ns[xx,yy]) + f[i,j])/(ns[xx,yy]+1)
+		ns[xx,yy] += 1
+	end
+	I
 end
