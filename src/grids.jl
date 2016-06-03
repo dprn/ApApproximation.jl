@@ -193,5 +193,5 @@ function evaluate2cart(f::BispInterpolation, def::Int = 256)
 		I[xx,yy] = (I[xx,yy]*(ns[xx,yy]) + f[i,j])/(ns[xx,yy]+1)
 		ns[xx,yy] += 1
 	end
-	I
+	I'
 end
