@@ -89,6 +89,10 @@ getindex(f::BispInterpolation, i::Int) = f.f[i]
 getindex(f::BispInterpolation, I) = [f.f[i] for i in I]
 getindex(f::BispInterpolation, ::Colon) = [f.f[i] for i in 1:length(f)]
 getindex(f::BispInterpolation, i::Int, j::Int) = f.f[i,j]
+getindex(f::BispInterpolation, i::Int, ::Colon) = f.f[i,:]
+getindex(f::BispInterpolation, ::Colon, j::Int) = f.f[:,j]
+getindex(f::BispInterpolation, I, ::Colon) = [f.f[i,:] for i in I]
+getindex(f::BispInterpolation, ::Colon, J) = [f.f[:, j] for j in J]
 getindex(f::BispInterpolation, I, J) = [f.f[i,j] for i in I, j in J]
 
 ndims(af::BispInterpolation) = length(size(af.f))
