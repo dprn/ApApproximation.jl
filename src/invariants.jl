@@ -46,7 +46,7 @@ function BS(af::BispInterpolation, d = bisp_split(af.E); max_rad = 10.)
         ω1 = squeeze(af[key[1],:], 1)
         ω2 = circshift(squeeze(af[key[2],:], 1), n)
         ω3 = circshift(squeeze(af[val[1],:], 1), -val[2]+n)
-        push!(BS, (max(λ(af.E[key[1]]), λ(af.E[key[2]])) , dot(ω1.*ω2, ω3)))
+        push!(BS, (max(λ(af.E[key[1]]), λ(af.E[key[2]])) , real(dot(ω1.*ω2, ω3))))
       end
     end
   end
