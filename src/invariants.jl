@@ -34,7 +34,7 @@ end
 Evaluates the bispectrum of the given BispInterpolation.
 """
 function BS(af::BispInterpolation, d = bisp_split(af.E); max_rad = 10.)
-  BS = Set{ Tuple{Float64,eltype(af)} }()
+  BS = Set{ Tuple{Float64,real(eltype(af))} }()
 
   for (key, val) in d
     if (af.E[key[1]] == zero(eltype(af.E))) && (af.E[key[2]] == zero(eltype(af.E)))
