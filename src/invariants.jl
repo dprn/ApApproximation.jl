@@ -33,23 +33,31 @@ end
 """
 Evaluates the bispectrum of the given BispInterpolation.
 """
-function BS(af::BispInterpolation, d = bisp_split(af.E))
-  BS = Vector{eltype(af)}()
+function BS(af::BispInterpolation, d = bisp_split(af.E); max_rad = 10.)
+  BS = Set{ Tuple{Float64,eltype(af)} }()
 
   for (key, val) in d
-    for n in 1:camembert(af)
-      ω1 = squeeze(af[key[1],:], 1)
-      ω2 = circshift(squeeze(af[key[2],:], 1), n)
-      ω3 = circshift(squeeze(af[val[1],:], 1), -val[2]+n)
-      push!(BS, dot(ω1.*ω2, ω3))
+    if (af.E[key[1]] == zero(eltype(af.E))) && (af.E[key[2]] == zero(eltype(af.E)))
+    # if af.E[key[1]] == af.E[key[2]] == zero(eltype(af.E))
+      ω = squeeze(af[key[1],:], 1)
+      push!(BS, (0. , dot(ω, ω)))
+    else
+      for n in 1:camembert(af)
+        ω1 = squeeze(af[key[1],:], 1)
+        ω2 = circshift(squeeze(af[key[2],:], 1), n)
+        ω3 = circshift(squeeze(af[val[1],:], 1), -val[2]+n)
+        push!(BS, (max(λ(af.E[key[1]]), λ(af.E[key[2]])) , dot(ω1.*ω2, ω3)))
+      end
     end
   end
-  BS
+  sort(collect(BS), lt = (x,y)->x[1]<=y[1])
 end
 
 
 """
 Evaluates the rotational bispectrum of the given BispInterpolation.
+
+NOT WORKING CORRECTLY
 """
 function RBS(af::BispInterpolation, d = bisp_split(af.E))
   RBS = Vector{eltype(af)}()

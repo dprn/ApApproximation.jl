@@ -34,7 +34,7 @@ include("bessel.jl")
 include("ap_interpolation.jl")
 
 
-export PS, RPS
+export PS, RPS, BS, RBS
 include("invariants.jl")
 
 end # module
