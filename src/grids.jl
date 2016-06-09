@@ -36,7 +36,7 @@ function pol2cart{T<:Real}(pol::Array{T,2},
     rho_step = coeff/(size(pol,1) - 1)
     rho = 0.:rho_step:coeff
     theta_step = 2/size(pol,2)
-    theta = (1/2-theta_step:-theta_step:-3/2)*pi
+    theta = (1-theta_step:-theta_step:-1)*pi
 
     z = CoordInterpGrid((rho, theta), pol, BCperiodic, InterpQuadratic)
 
@@ -49,7 +49,7 @@ function pol2cart{T<:Complex}(polA::Array{T,2}, def_x::Integer = round(Int,size(
     rho_step = coeff/(size(pol,1) - 1)
     rho = 0.:rho_step:coeff
     theta_step = 2/size(pol,2)
-    theta = (1/2-theta_step:-theta_step:-3/2)*pi
+    theta = (1-theta_step:-theta_step:-1)*pi
 
     z_real = CoordInterpGrid((rho, theta), real(polA), BCperiodic, InterpQuadratic)
     z_imag = CoordInterpGrid((rho, theta), imag(polA), BCperiodic, InterpQuadratic)
@@ -124,8 +124,9 @@ rotate(f::BispInterpolation, x::Real) = BispInterpolation(circshift(f.f,(0,round
 Translates in the frequency space (useful for tests).
 """
 function translate{T<:Complex, N}(af::BispInterpolation{N,T}, ρ::Real, θ::Real)
-    af_trans = T[af[i,j]*exp(im*af.E[i].λ*ρ*cos(float(af.E[i,j].ω)-θ)) for i in 1:size(af.E,1), j in 1:size(af.E,2)]
-    BispInterpolation(af_trans, af.E)
+	θ = θ + pi/2 # This is to fix the fact that the images are stored as transposes
+  af_trans = T[af[i,j]*exp(im*af.E[i].λ*ρ*cos(float(af.E[i,j].ω)-θ)) for i in 1:size(af.E,1), j in 1:size(af.E,2)]
+  BispInterpolation(af_trans, af.E)
 end
 
 ###########################
