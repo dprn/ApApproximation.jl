@@ -120,7 +120,7 @@ rotate(f::BispInterpolation, x::Real) = BispInterpolation(circshift(f.f,(0,round
 Translates in the frequency space (useful for tests).
 """
 function translate{T<:Complex, N}(af::BispInterpolation{N,T}, ρ::Real, θ::Real)
-	θ = θ - pi # This is to fix the fact that the images are stored as transposes
+	θ = θ - pi/2 # This is to fix the fact that the images are stored as transposes
   af_trans = T[af[i,j]*exp(im*af.E[i].λ*ρ*cos(float(af.E[i,j].ω)-θ)) for i in 1:size(af.E,1), j in 1:size(af.E,2)]
   BispInterpolation(af_trans, af.E)
 end
