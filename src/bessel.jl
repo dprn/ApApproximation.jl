@@ -61,7 +61,8 @@ function BesselMatrix(E::BispectralSet, F::BispectralSet; weights = nothing)
     matrix = discrete_bessel_matrix(E,F)
     qr = Vector{QRfact}(size(matrix,1))
     for i in 1:size(matrix,1)
-        J = squeeze(matrix[i,:,:],1)
+        # J = squeeze(matrix[i,:,:],1)
+        J = matrix[i,:,:]
         if weights == nothing
             qr[i] = qrfact(J)
         else

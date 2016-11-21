@@ -44,11 +44,13 @@ function ap(f::BispInterpolation, F::BispectralSet, J::Union{Void, BesselMatrix}
     hat_af = Array(Complex128, size(F))
     for n = 1:camembert(F)
         if J == nothing
-            A = squeeze(matrix[mod1(n-1, camembert(F)),:,:],1)
+            # A = squeeze(matrix[mod1(n-1, camembert(F)),:,:],1)
+            A = matrix[mod1(n-1, camembert(F)),:,:]
             b = hat_f[:,n]
         else
             A = J.qr[mod1(n-1,camembert(F))]
-            j = squeeze(J.matrix[mod1(n-1,camembert(F)),:,:],1)
+            # j = squeeze(J.matrix[mod1(n-1,camembert(F)),:,:],1)
+            j = J.matrix[mod1(n-1,camembert(F)),:,:]
             A = (J.weights == nothing) ? j : j'*j+diagm(J.weights) #squeeze(J.matrix[mod1(n-1,camembert(F),:,:],1)
             b = (J.weights == nothing) ? hat_f[:,n] : j' * hat_f[:,n]
         end
@@ -76,7 +78,8 @@ function iap(af::BispInterpolation, E::BispectralSet, J::Union{Void, BesselMatri
 
     hat_f = Array(Complex128, size(E))
     for n = 1:camembert(E)
-        hat_f[:,n] = squeeze(matrix[mod1(n-1,camembert(E)),:,:],1)*hat_af[:,n]
+        # hat_f[:,n] = squeeze(matrix[mod1(n-1,camembert(E)),:,:],1)*hat_af[:,n]
+        hat_f[:,n] = matrix[mod1(n-1,camembert(E)),:,:]*hat_af[:,n]
     end
 
     f = radial_ifft(hat_f, E)
